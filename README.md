@@ -2,7 +2,7 @@
 
 Wenche er et enkelt kommandolinjeverktøy for elektronisk innsending av regnskap og skattedokumenter til norske myndigheter via Altinn. Verktøyet er laget for holdingselskaper og småaksjeselskaper med lav aktivitet som ikke har behov for et fullverdig regnskapsprogram.
 
-Autentisering skjer med BankID via ID-porten — ingen virksomhetssertifikat nødvendig.
+Autentisering skjer via Maskinporten med et selvgenerert RSA-nøkkelpar — ingen virksomhetssertifikat eller BankID-innlogging nødvendig.
 
 ## Støttede innsendinger
 
@@ -15,8 +15,8 @@ Autentisering skjer med BankID via ID-porten — ingen virksomhetssertifikat nø
 ## Forutsetninger
 
 - Python 3.11 eller nyere
-- En registrert ID-porten klient-ID (se [Registrer ID-porten klient](#registrer-id-porten-klient))
-- BankID
+- Registrert Maskinporten-klient hos Digdir (se [Registrer Maskinporten-klient](#registrer-maskinporten-klient))
+- OpenSSL (for generering av nøkkelpar)
 
 ## Installasjon
 
@@ -28,44 +28,52 @@ pip install -e .
 
 ## Oppsett
 
-### 1. Konfigurasjonsfil
+### 1. Generer RSA-nøkkelpar
 
-Kopier eksempelfilen og fyll inn dine verdier:
+```bash
+openssl genrsa -out maskinporten_privat.pem 2048
+openssl rsa -in maskinporten_privat.pem -pubout -out maskinporten_offentlig.pem
+```
+
+Den private nøkkelen (`maskinporten_privat.pem`) skal aldri deles eller legges i git. Den offentlige nøkkelen lastes opp til Digdir under registrering.
+
+### 2. Konfigurasjonsfil
 
 ```bash
 cp config.example.yaml config.yaml
 ```
 
-Åpne `config.yaml` og fyll inn selskapsinfo, regnskapstall og aksjonærdata. Filen er kommentert og selvforklarende.
+Fyll inn selskapsinfo, regnskapstall og aksjonærdata. Filen er kommentert og selvforklarende.
 
-### 2. Miljøvariabler
+### 3. Miljøvariabler
 
 ```bash
 cp .env.example .env
 ```
 
-Åpne `.env` og lim inn din ID-porten klient-ID:
+Fyll inn klient-ID fra Digdir og sti til privat nøkkel:
 
 ```
-IDPORTEN_CLIENT_ID=din-client-id-her
+MASKINPORTEN_CLIENT_ID=din-client-id-her
+MASKINPORTEN_PRIVAT_NOKKEL=maskinporten_privat.pem
 ```
 
-For å bruke testmiljøet i stedet for produksjon:
+For testmiljø i stedet for produksjon:
 
 ```
 WENCHE_ENV=test
 ```
 
-### Registrer ID-porten klient
+### Registrer Maskinporten-klient
 
-For å sende inn via API må du ha en registrert OIDC-klient hos Digdir. Dette er gratis og tar normalt 1–2 virkedager.
+Wenche bruker Maskinporten for maskin-til-maskin-autentisering. Registrering er gratis.
 
-1. Gå til [samarbeid.digdir.no](https://samarbeid.digdir.no) og logg inn
-2. Opprett en ny integrasjon under **ID-porten**
-3. Velg klienttype **public** (ingen client secret nødvendig)
-4. Sett redirect URI til `http://localhost:7777/callback`
-5. Legg til scope: `openid profile altinn:instances.read altinn:instances.write`
-6. Kopier klient-IDen inn i `.env`
+1. Gå til [samarbeid.digdir.no](https://samarbeid.digdir.no) og søk om tilgang som **Maskinporten-konsument**
+2. Etter innvilgelse: logg inn på selvbetjeningsportalen
+3. Opprett en ny Maskinporten-integrasjon
+4. Last opp innholdet i `maskinporten_offentlig.pem`
+5. Legg til scopes: `altinn:instances.read` og `altinn:instances.write`
+6. Kopier klient-ID inn i `.env`
 
 ## Bruk
 
@@ -78,7 +86,7 @@ wenche send-aarsregnskap --dry-run
 wenche send-aksjonaerregister --dry-run
 ```
 
-Dry-run lagrer de genererte filene i gjeldende mappe slik at du kan inspisere dem.
+`--dry-run` lagrer de genererte filene i gjeldende mappe slik at du kan inspisere dem.
 
 ### Send inn
 
@@ -89,7 +97,7 @@ wenche send-aksjonaerregister
 wenche logout
 ```
 
-Du blir sendt til nettleseren for BankID-innlogging første gang. Tokenet gjenbrukes for påfølgende kommandoer i samme sesjon.
+`wenche login` autentiserer mot Maskinporten med din private nøkkel. Tokenet gjenbrukes for påfølgende kommandoer i samme sesjon.
 
 ### Alle kommandoer
 
@@ -97,15 +105,15 @@ Du blir sendt til nettleseren for BankID-innlogging første gang. Tokenet gjenbr
 wenche --help
 
 Kommandoer:
-  login                    Logg inn med BankID via ID-porten
+  login                    Autentiser mot Maskinporten med RSA-nokkel
   logout                   Logg ut og slett lagret token
-  send-aarsregnskap        Send inn årsregnskap til Brønnøysundregistrene
-  send-aksjonaerregister   Send inn aksjonærregisteroppgave (RF-1086)
-  send-skattemelding       Send inn skattemelding for AS (ikke tilgjengelig ennå)
+  send-aarsregnskap        Send inn arsregnskap til Bronnoysundregistrene
+  send-aksjonaerregister   Send inn aksjonaerregisteroppgave (RF-1086)
+  send-skattemelding       Send inn skattemelding for AS (ikke tilgjengelig enna)
 
 Alternativer:
   --config TEXT            Sti til konfigurasjonsfil [standard: config.yaml]
-  --dry-run                Generer dokument lokalt uten å sende til Altinn
+  --dry-run                Generer dokument lokalt uten a sende til Altinn
 ```
 
 ## Frister

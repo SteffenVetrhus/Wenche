@@ -29,7 +29,7 @@ def main():
 
 @main.command()
 def login():
-    """Logg inn med BankID via ID-porten."""
+    """Autentiser mot Maskinporten med RSA-nøkkel."""
     auth.login()
 
 
