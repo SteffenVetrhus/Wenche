@@ -1,0 +1,28 @@
+name: Publiser til PyPI
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write  # Kreves for trusted publishing (ingen API-token nødvendig)
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Bygg pakke
+        run: |
+          pip install build
+          python -m build
+
+      - name: Last opp til PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
