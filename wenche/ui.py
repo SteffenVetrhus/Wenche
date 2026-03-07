@@ -2,7 +2,10 @@
 Wenche — webgrensesnitt (Streamlit).
 
 Start med: wenche ui
+For testmiljø: WENCHE_ENV=test wenche ui
 """
+
+import os
 
 import streamlit as st
 
@@ -28,6 +31,8 @@ from wenche.models import (
 from wenche import skattemelding as sm_modul
 from wenche import aarsregnskap as ar_modul
 from wenche import aksjonaerregister as akr_modul
+from wenche import auth
+from wenche.altinn_client import AltinnClient
 from wenche.xbrl import generer_ixbrl
 
 st.set_page_config(page_title="Wenche", layout="wide")
@@ -387,3 +392,85 @@ with fane_generer:
                     file_name=f"aksjonaerregister_{int(regnskapsaar)}_{org_nummer}.xml",
                     mime="application/xml",
                 )
+
+    # -----------------------------------------------------------------------
+    # Innsending til Altinn
+    # -----------------------------------------------------------------------
+
+    st.divider()
+    st.subheader("Send til Altinn")
+
+    env = os.getenv("WENCHE_ENV", "prod")
+    if env == "test":
+        st.info("Miljø: **Testmiljø (tt02)** — ingen ekte innsending")
+    else:
+        st.warning(
+            "Miljø: **Produksjon** — innsending er bindende. "
+            "Start med `WENCHE_ENV=test wenche ui` for å teste mot testmiljøet først."
+        )
+
+    def hent_token():
+        try:
+            return auth.get_altinn_token()
+        except RuntimeError as e:
+            st.error(f"Autentisering feilet:\n\n{e}")
+            return None
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button("Send årsregnskap til Altinn", use_container_width=True):
+            regnskap = bygg_regnskap()
+            feil = ar_modul.valider(regnskap)
+            if feil:
+                for f in feil:
+                    st.error(f)
+            else:
+                token = hent_token()
+                if token:
+                    try:
+                        with st.spinner("Sender årsregnskap til Altinn..."):
+                            with AltinnClient(token) as klient:
+                                ar_modul.send_inn(regnskap, klient)
+                        st.success(
+                            f"Årsregnskap for {regnskap.regnskapsaar} sendt inn til "
+                            f"Brønnøysundregistrene."
+                        )
+                    except Exception as e:
+                        st.error(f"Innsending feilet:\n\n{e}")
+
+    with col2:
+        if st.button("Send aksjonærregister til Altinn", use_container_width=True):
+            regnskap = bygg_regnskap()
+            aksjonaerer = [
+                Aksjonaer(
+                    navn=a[0],
+                    fodselsnummer=a[1],
+                    antall_aksjer=int(a[2]),
+                    aksjeklasse=a[3],
+                    utbytte_utbetalt=int(a[4]),
+                    innbetalt_kapital_per_aksje=int(a[5]),
+                )
+                for a in aksjonaerer_data
+            ]
+            oppgave = Aksjonaerregisteroppgave(
+                selskap=regnskap.selskap,
+                regnskapsaar=int(regnskapsaar),
+                aksjonaerer=aksjonaerer,
+            )
+            feil = akr_modul.valider(oppgave)
+            if feil:
+                for f in feil:
+                    st.error(f)
+            else:
+                token = hent_token()
+                if token:
+                    try:
+                        with st.spinner("Sender aksjonærregister til Altinn..."):
+                            with AltinnClient(token) as klient:
+                                akr_modul.send_inn(oppgave, klient)
+                        st.success(
+                            f"Aksjonærregisteroppgave for {int(regnskapsaar)} sendt inn."
+                        )
+                    except Exception as e:
+                        st.error(f"Innsending feilet:\n\n{e}")
