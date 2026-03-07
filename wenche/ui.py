@@ -259,7 +259,7 @@ with fane_selskap:
         st.number_input("Regnskapsår", min_value=2000, max_value=2100, key="regnskapsaar")
 
     st.divider()
-    if st.button("Lagre konfigurasjon til config.yaml", type="primary"):
+    if st.button("Lagre selskapsopplysninger", type="primary"):
         lagre_config()
         st.success(f"Lagret til {CONFIG_FIL.resolve()}")
 
