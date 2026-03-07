@@ -245,17 +245,49 @@ def generer(regnskap: Aarsregnskap, konfig: SkattemeldingKonfig) -> str:
 
     linjer += [
         linje,
-        "  BALANSE — KONTROLL",
+        "  RF-1167  BALANSE",
         linje,
         "",
-        f"    Sum eiendeler                {_nok(b.eiendeler.sum)}",
-        f"    Sum egenkapital og gjeld     {_nok(b.egenkapital_og_gjeld.sum)}",
+        "  EIENDELER",
+        "    Anleggsmidler:",
+        f"      Aksjer i datterselskap      {_nok(b.eiendeler.anleggsmidler.aksjer_i_datterselskap)}",
+        f"      Andre aksjer                {_nok(b.eiendeler.anleggsmidler.andre_aksjer)}",
+        f"      Langsiktige fordringer      {_nok(b.eiendeler.anleggsmidler.langsiktige_fordringer)}",
+        f"    Sum anleggsmidler             {_nok(b.eiendeler.anleggsmidler.sum)}",
+        "",
+        "    Omløpsmidler:",
+        f"      Kortsiktige fordringer      {_nok(b.eiendeler.omloepmidler.kortsiktige_fordringer)}",
+        f"      Bankinnskudd                {_nok(b.eiendeler.omloepmidler.bankinnskudd)}",
+        f"    Sum omløpsmidler              {_nok(b.eiendeler.omloepmidler.sum)}",
+        "",
+        f"  SUM EIENDELER                  {_nok(b.eiendeler.sum)}",
+        "",
+        "  EGENKAPITAL OG GJELD",
+        "    Egenkapital:",
+        f"      Aksjekapital                {_nok(b.egenkapital_og_gjeld.egenkapital.aksjekapital)}",
+        f"      Overkursfond                {_nok(b.egenkapital_og_gjeld.egenkapital.overkursfond)}",
+        f"      Annen egenkapital           {_nok(b.egenkapital_og_gjeld.egenkapital.annen_egenkapital)}",
+        f"    Sum egenkapital               {_nok(b.egenkapital_og_gjeld.egenkapital.sum)}",
+        "",
+        "    Langsiktig gjeld:",
+        f"      Lån fra aksjonær            {_nok(b.egenkapital_og_gjeld.langsiktig_gjeld.laan_fra_aksjonaer)}",
+        f"      Andre langsiktige lån       {_nok(b.egenkapital_og_gjeld.langsiktig_gjeld.andre_langsiktige_laan)}",
+        f"    Sum langsiktig gjeld          {_nok(b.egenkapital_og_gjeld.langsiktig_gjeld.sum)}",
+        "",
+        "    Kortsiktig gjeld:",
+        f"      Leverandørgjeld             {_nok(b.egenkapital_og_gjeld.kortsiktig_gjeld.leverandoergjeld)}",
+        f"      Skyldige offentlige avgifter {_nok(b.egenkapital_og_gjeld.kortsiktig_gjeld.skyldige_offentlige_avgifter)}",
+        f"      Annen kortsiktig gjeld      {_nok(b.egenkapital_og_gjeld.kortsiktig_gjeld.annen_kortsiktig_gjeld)}",
+        f"    Sum kortsiktig gjeld          {_nok(b.egenkapital_og_gjeld.kortsiktig_gjeld.sum)}",
+        "",
+        f"  SUM EGENKAPITAL OG GJELD       {_nok(b.egenkapital_og_gjeld.sum)}",
+        "",
     ]
 
     if i_balanse:
-        linjer.append("    Balanse: OK")
+        linjer.append("  Balansekontroll: OK")
     else:
-        linjer.append(f"    ADVARSEL: Balansen stemmer ikke! Differanse: {_nok(differanse)}")
+        linjer.append(f"  ADVARSEL: Balansen stemmer ikke! Differanse: {_nok(differanse)}")
 
     linjer += [
         "",
