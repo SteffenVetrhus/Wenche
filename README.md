@@ -33,19 +33,27 @@ Har du aldri hørt om disse skjemaene? Her er en kort forklaring:
 
 ## Installasjon
 
+Sjekk først at du har Python 3.11 eller nyere:
+
 ```bash
+python3 --version
+```
+
+Viser den 3.9 eller eldre, installer en nyere versjon:
+
+```bash
+brew install python@3.11
+```
+
+Installer deretter Wenche i et virtuelt miljø:
+
+```bash
+python3.11 -m venv .venv
+source .venv/bin/activate
 pip install wenche
 ```
 
-Det er alt. Wenche er nå tilgjengelig som kommandoen `wenche` i terminalen din.
-
-> **Merk:** Det anbefales å installere i et virtuelt miljø for å unngå konflikter med andre Python-pakker:
-> ```bash
-> python3 -m venv .venv
-> source .venv/bin/activate
-> pip install wenche
-> ```
-> Husk å aktivere miljøet (`source .venv/bin/activate`) i nye terminalvinduer.
+Wenche er nå tilgjengelig som kommandoen `wenche` i terminalen din. Husk å aktivere miljøet (`source .venv/bin/activate`) i nye terminalvinduer.
 
 ### For utviklere
 
