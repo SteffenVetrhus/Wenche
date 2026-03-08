@@ -290,18 +290,7 @@ with fane_oppsett:
         "før du begynner å fylle inn selskapsinformasjon."
     )
 
-    # --- Statusoversikt ---
-    st.markdown("#### Status")
-    sjekker = _sjekk_konfig()
-    alle_ok = all(ok for ok, _, _ in sjekker)
-    for ok, tittel, detalj in sjekker:
-        if ok:
-            st.success(f"**{tittel}** — {detalj}")
-        else:
-            st.error(f"**{tittel}** — {detalj}")
-
     # --- Konfigurasjonsskjema ---
-    st.markdown("---")
     st.markdown("#### Konfigurasjon")
     st.caption(
         "Verdiene lagres i `.env`-filen i arbeidsmappen din og brukes automatisk ved neste oppstart."
@@ -364,8 +353,17 @@ with fane_oppsett:
             endringer = True
 
         if endringer:
-            st.success("Konfigurasjon lagret. Statusoversikten oppdateres ved neste lasting.")
+            st.success("Konfigurasjon lagret.")
             st.rerun()
+
+    # --- Statusoversikt ---
+    st.markdown("---")
+    st.markdown("#### Status")
+    sjekker = _sjekk_konfig()
+    alle_ok = all(ok for ok, _, _ in sjekker)
+    for ok, tittel, detalj in sjekker:
+        ikon = "✅" if ok else "⚠️"
+        st.markdown(f"{ikon} **{tittel}** — {detalj}")
 
     # --- Tilkoblingstest ---
     st.markdown("---")
