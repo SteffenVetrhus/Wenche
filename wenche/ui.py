@@ -75,7 +75,7 @@ _DEFAULTS = {
     "skyldige_offentlige_avgifter": 0,
     "annen_kortsiktig_gjeld": 0,
     "underskudd": 0,
-    "fritaksmetoden": True,
+    "fritaksmetoden": False,
     "antall_aksjonaerer": 1,
 }
 
@@ -128,7 +128,7 @@ if "initialisert" not in st.session_state:
 
             sm = cfg.get("skattemelding", {})
             verdier["underskudd"] = int(sm.get("underskudd_til_fremfoering", 0))
-            verdier["fritaksmetoden"] = bool(sm.get("anvend_fritaksmetoden", True))
+            verdier["fritaksmetoden"] = bool(sm.get("anvend_fritaksmetoden", False))
 
             aksjonaerer_raw = cfg.get("aksjonaerer", [])
             verdier["antall_aksjonaerer"] = len(aksjonaerer_raw)
@@ -415,8 +415,17 @@ with fane_generer:
         st.checkbox(
             "Anvend fritaksmetoden",
             key="fritaksmetoden",
-            help="Sett til true for holdingselskaper som eier aksjer i datterselskaper",
+            help=(
+                "Gjelder dersom selskapet har mottatt utbytte fra datterselskaper. "
+                "Med fritaksmetoden er 97 % av utbyttet skattefritt — kun 3 % (sjablonregelen) "
+                "regnes som skattepliktig inntekt. Hjemlet i skatteloven § 2-38."
+            ),
         )
+        if int(st.session_state.get("utbytte_fra_datterselskap", 0)) > 0 and not st.session_state["fritaksmetoden"]:
+            st.info(
+                "Du har ført utbytte fra datterselskap. Husk å krysse av for fritaksmetoden "
+                "dersom selskapet kvalifiserer (skatteloven § 2-38)."
+            )
 
     st.divider()
 
