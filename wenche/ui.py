@@ -508,7 +508,7 @@ with fane_generer:
             )
 
     with col2:
-        if st.button("Last ned iXBRL (årsregnskap)", use_container_width=True):
+        if st.button("Last ned årsregnskap", use_container_width=True):
             regnskap = bygg_regnskap()
             feil = ar_modul.valider(regnskap)
             if feil:
