@@ -85,8 +85,16 @@ git clone https://github.com/olefredrik/wenche.git
 cd wenche
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -e .
+pip install -e ".[dev]"
 ```
+
+Kjør testsuiten for å verifisere at alt fungerer:
+
+```bash
+pytest tests/ -v
+```
+
+Testene kjøres også automatisk på GitHub ved push og pull request.
 
 ## Oppsett
 
