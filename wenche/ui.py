@@ -409,20 +409,18 @@ with fane_oppsett:
 
     # --- Systembruker-oppsett ---
     st.markdown("---")
-    st.markdown("#### Systembruker-oppsett")
-    st.caption(
-        "Altinn 3 krever at Wenche er registrert som et system og at organisasjonen din "
-        "har godkjent en systembruker. Dette gjøres én gang per miljø."
-    )
+    with st.expander("Systembruker-oppsett (gjøres én gang per miljø)", expanded=False):
+        st.caption(
+            "Altinn 3 krever at Wenche er registrert som et leverandørsystem og at organisasjonen din "
+            "har godkjent en systembruker. Dette gjøres én gang — og på nytt hvis du bytter miljø."
+        )
 
-    if not alle_ok:
-        st.warning("Fiks konfigurasjonsfeilene ovenfor og lagre før du setter opp systembruker.")
-    else:
-        col_sb1, col_sb2 = st.columns(2)
-        with col_sb1:
-            st.markdown("**Steg A — Registrer system**")
-            st.caption("Registrerer Wenche i Altinns systemregister. Kan kjøres på nytt uten skade.")
-            if st.button("Registrer Wenche i systemregisteret", use_container_width=True):
+        if not alle_ok:
+            st.warning("Fiks konfigurasjonsfeilene ovenfor og lagre før du setter opp systembruker.")
+        else:
+            st.markdown("**Steg 1 — Registrer Wenche i systemregisteret**")
+            st.caption("Registrerer Wenche i Altinns systemregister med riktige tilgangsrettigheter. Kan kjøres på nytt uten skade — oppdaterer automatisk hvis systemet allerede finnes.")
+            if st.button("Registrer Wenche i systemregisteret"):
                 with st.spinner("Registrerer system..."):
                     try:
                         token = auth.login_admin()
@@ -436,25 +434,22 @@ with fane_oppsett:
                     except Exception as e:
                         st.error(f"Feil: {e}")
 
-        with col_sb2:
-            st.markdown("**Steg B — Opprett systembruker**")
-            st.caption("Sender en forespørsel til organisasjonen. Du får en lenke du må åpne og godkjenne.")
-            if st.button("Opprett systembrukerforespørsel", use_container_width=True):
+            st.markdown("**Steg 2 — Opprett systembrukerforespørsel**")
+            st.caption("Sender en forespørsel til organisasjonen og returnerer en godkjenningslenke.")
+            if st.button("Opprett systembrukerforespørsel"):
                 with st.spinner("Oppretter forespørsel..."):
                     try:
                         token = auth.login_admin()
                         orgnr = os.getenv("ORG_NUMMER")
                         svar = systembruker.opprett_forespørsel(token, orgnr, orgnr)
                         st.success(f"Forespørsel opprettet (status: {svar['status']})")
-                        st.info(f"Godkjenn systembrukeren her:\n\n{svar['confirmUrl']}")
+                        st.info(f"**Steg 3 — Godkjenn i nettleseren**\n\nÅpne lenken nedenfor, logg inn og godkjenn tilgangen for organisasjonen din:\n\n{svar['confirmUrl']}")
                     except Exception as e:
                         st.error(f"Feil: {e}")
 
-    st.markdown("---")
-    st.markdown(
-        "Har du ikke satt opp Maskinporten ennå? "
-        "Se [oppsettsveiledningen](https://olefredrik.github.io/Wenche/oppsett/) i dokumentasjonen."
-    )
+        st.markdown(
+            "Trenger du hjelp? Se [oppsettsveiledningen](https://olefredrik.github.io/Wenche/oppsett/) i dokumentasjonen."
+        )
 
 
 # ---------------------------------------------------------------------------
