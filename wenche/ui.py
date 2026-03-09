@@ -420,7 +420,7 @@ with fane_oppsett:
         else:
             st.markdown("**Steg 1 — Registrer Wenche i systemregisteret**")
             st.caption("Registrerer Wenche i Altinns systemregister med riktige tilgangsrettigheter. Kan kjøres på nytt uten skade — oppdaterer automatisk hvis systemet allerede finnes.")
-            if st.button("Registrer Wenche i systemregisteret", use_container_width=True):
+            if st.button("Registrer Wenche i systemregisteret"):
                 with st.spinner("Registrerer system..."):
                     try:
                         token = auth.login_admin()
@@ -436,7 +436,7 @@ with fane_oppsett:
 
             st.markdown("**Steg 2 — Opprett systembrukerforespørsel**")
             st.caption("Sender en forespørsel til organisasjonen og returnerer en godkjenningslenke.")
-            if st.button("Opprett systembrukerforespørsel", use_container_width=True):
+            if st.button("Opprett systembrukerforespørsel"):
                 with st.spinner("Oppretter forespørsel..."):
                     try:
                         token = auth.login_admin()
