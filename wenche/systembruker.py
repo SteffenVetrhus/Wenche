@@ -24,8 +24,16 @@ _BASES = {
 _SYSTEM_NAVN = "wenche"
 
 # Ressurs-ID for BRG årsregnskap-appen i Altinns ressursregister.
-# Verifiseres mot live miljø under tt02-testing.
-_BRG_RESSURS = "brg-aarsregnskap-vanlig-202406"
+# Altinn 3-apper får ressurs-ID på formatet app_{org}_{appnavn}.
+_BRG_RESSURS = "app_brg_aarsregnskap-vanlig-202406"
+
+_RIGHTS = [
+    {
+        "resource": [
+            {"id": "urn:altinn:resource", "value": _BRG_RESSURS}
+        ]
+    }
+]
 
 
 def _base() -> str:
@@ -38,46 +46,61 @@ def system_id(vendor_orgnr: str) -> str:
     return f"{vendor_orgnr}_{_SYSTEM_NAVN}"
 
 
-def registrer_system(maskinporten_token: str, vendor_orgnr: str, client_id: str) -> dict:
-    """
-    Registrerer Wenche i Altinns systemregister.
-
-    Kjøres én gang per miljø (test/prod). Kan kjøres på nytt uten skade
-    dersom systemet allerede er registrert (returnerer da feilkode fra Altinn).
-    """
+def _bygg_system_payload(vendor_orgnr: str, client_id: str) -> dict:
     sid = system_id(vendor_orgnr)
-    payload = {
+    return {
         "id": sid,
         "vendor": {
             "authority": "iso6523-actorid-upis",
             "ID": f"0192:{vendor_orgnr}",
         },
-        "name": {"nb": "Wenche", "en": "Wenche"},
+        "name": {"nb": "Wenche", "nn": "Wenche", "en": "Wenche"},
         "description": {
-            "nb": "Enkel innsending av årsregnskap til Brønnøysundregistrene for holdingselskaper.",
+            "nb": "Enkel innsending av årsregnskap til Brønnøysundregistrene for holdingselskap.",
+            "nn": "Enkel innsending av årsrekneskap til Brønnøysundregistra for holdingselskap.",
             "en": "Simple annual accounts submission to the Register of Business Enterprises.",
         },
-        "rights": [
-            {
-                "resource": [
-                    {"id": "urn:altinn:resource", "value": _BRG_RESSURS},
-                ]
-            }
-        ],
         "clientId": [client_id],
         "isVisible": True,
+        "rights": _RIGHTS,
     }
+
+
+def registrer_system(maskinporten_token: str, vendor_orgnr: str, client_id: str) -> dict:
+    """
+    Registrerer eller oppdaterer Wenche i Altinns systemregister.
+
+    Prøver POST først. Hvis systemet allerede finnes, brukes PUT for å oppdatere.
+    """
+    sid = system_id(vendor_orgnr)
+    payload = _bygg_system_payload(vendor_orgnr, client_id)
+    headers = {
+        "Authorization": f"Bearer {maskinporten_token}",
+        "Content-Type": "application/json",
+    }
+
     resp = httpx.post(
         f"{_base()}/authentication/api/v1/systemregister/vendor",
         json=payload,
-        headers={
-            "Authorization": f"Bearer {maskinporten_token}",
-            "Content-Type": "application/json",
-        },
+        headers=headers,
         timeout=15,
     )
-    resp.raise_for_status()
-    return resp.json()
+    if resp.is_success:
+        return resp.json()
+
+    # Systemet finnes allerede — oppdater med PUT
+    if resp.status_code == 400 and "already exists" in resp.text:
+        resp = httpx.put(
+            f"{_base()}/authentication/api/v1/systemregister/vendor/{sid}",
+            json=payload,
+            headers=headers,
+            timeout=15,
+        )
+        if not resp.is_success:
+            raise RuntimeError(f"{resp.status_code} {resp.reason_phrase}:\n{resp.text}")
+        return resp.json() if resp.text.strip() else {"id": sid, "oppdatert": True}
+
+    raise RuntimeError(f"{resp.status_code} {resp.reason_phrase}:\n{resp.text}")
 
 
 def opprett_forespørsel(
@@ -94,13 +117,7 @@ def opprett_forespørsel(
         "systemId": sid,
         "partyOrgNo": org_nummer,
         "integrationTitle": "Wenche årsregnskap",
-        "rights": [
-            {
-                "resource": [
-                    {"id": "urn:altinn:resource", "value": _BRG_RESSURS},
-                ]
-            }
-        ],
+        "rights": _RIGHTS,
     }
     resp = httpx.post(
         f"{_base()}/authentication/api/v1/systemuser/request/vendor",
@@ -111,7 +128,8 @@ def opprett_forespørsel(
         },
         timeout=15,
     )
-    resp.raise_for_status()
+    if not resp.is_success:
+        raise RuntimeError(f"{resp.status_code} {resp.reason_phrase}:\n{resp.text}")
     return resp.json()
 
 

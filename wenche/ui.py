@@ -429,7 +429,10 @@ with fane_oppsett:
                         orgnr = os.getenv("ORG_NUMMER")
                         client_id = os.getenv("MASKINPORTEN_CLIENT_ID")
                         svar = systembruker.registrer_system(token, orgnr, client_id)
-                        st.success(f"System registrert: {svar.get('id', svar)}")
+                        if svar.get("oppdatert"):
+                            st.success("System oppdatert i systemregisteret.")
+                        else:
+                            st.success("System registrert i systemregisteret.")
                     except Exception as e:
                         st.error(f"Feil: {e}")
 

@@ -78,7 +78,10 @@ def registrer_system():
     click.echo(f"Registrerer system '{sid}' i Altinn...")
     try:
         svar = systembruker.registrer_system(token, org_nummer, client_id)
-        click.echo(f"System registrert: {svar}")
+        if svar.get("oppdatert"):
+            click.echo(f"System '{sid}' oppdatert i Altinn.")
+        else:
+            click.echo(f"System registrert: {svar}")
     except Exception as e:
         click.echo(f"Feil ved registrering: {e}", err=True)
         raise SystemExit(1)
