@@ -110,21 +110,21 @@ class AltinnClient:
     def fullfoor_instans(self, app_key: str, instans: dict) -> None:
         """
         Fullfører innsending i to steg:
-          1. confirm — bekrefter og flytter instansen til signeringssteg
-          2. sign    — signerer og sender inn
+          1. process/next (uten action) — avanserer fra Utfylling til Signering
+          2. process/next med action=sign — signerer og sender inn
         """
         instance_id = instans["id"]
         url = f"{self._app_base(app_key)}/instances/{instance_id}/process/next"
 
-        resp = self._http.put(url, json={"action": "confirm"})
+        resp = self._http.put(url)
         if not resp.is_success:
             raise RuntimeError(f"{resp.status_code} {resp.reason_phrase}:\n{resp.text}")
-        print("Instans bekreftet (confirm).")
+        print("Instans avansert til signeringssteg.")
 
         resp = self._http.put(url, json={"action": "sign"})
         if not resp.is_success:
             raise RuntimeError(f"{resp.status_code} {resp.reason_phrase}:\n{resp.text}")
-        print("Innsending signert og fullfort.")
+        print("Innsending signert og fullført.")
 
     def hent_status(self, app_key: str, instans: dict) -> dict:
         """Henter status for en instans."""
