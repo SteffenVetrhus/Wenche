@@ -861,7 +861,12 @@ with fane_dokumenter:
     st.divider()
 
     def bygg_regnskap() -> Aarsregnskap:
+        antall_aksjona = int(st.session_state.get("antall_aksjonaerer", 1))
+        utbytte_utbetalt = sum(
+            int(st.session_state.get(f"a_utbytte_{i}", 0)) for i in range(antall_aksjona)
+        )
         return Aarsregnskap(
+            utbytte_utbetalt=utbytte_utbetalt,
             selskap=Selskap(
                 navn=st.session_state["navn"],
                 org_nummer=st.session_state["org_nummer"],
