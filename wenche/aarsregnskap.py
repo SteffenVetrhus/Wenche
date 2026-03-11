@@ -99,6 +99,10 @@ def les_config(config_fil: str) -> Aarsregnskap:
     foregaaende_resultat = _les_resultat(fa["resultatregnskap"]) if "resultatregnskap" in fa else Resultatregnskap()
     foregaaende_balanse = _les_balanse(fa["balanse"]) if "balanse" in fa else Balanse()
 
+    utbytte_utbetalt = sum(
+        int(a.get("utbytte_utbetalt", 0)) for a in cfg.get("aksjonaerer", [])
+    )
+
     return Aarsregnskap(
         selskap=selskap,
         regnskapsaar=cfg["regnskapsaar"],
@@ -106,6 +110,7 @@ def les_config(config_fil: str) -> Aarsregnskap:
         balanse=balanse,
         foregaaende_aar_resultat=foregaaende_resultat,
         foregaaende_aar_balanse=foregaaende_balanse,
+        utbytte_utbetalt=utbytte_utbetalt,
     )
 
 

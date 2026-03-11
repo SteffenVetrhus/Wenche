@@ -200,6 +200,7 @@ class Aarsregnskap:
     revideres: bool = False                     # True hvis regnskapet er revidert
     foregaaende_aar_resultat: Resultatregnskap = field(default_factory=Resultatregnskap)
     foregaaende_aar_balanse: Balanse = field(default_factory=Balanse)
+    utbytte_utbetalt: int = 0                  # Totalt utbytte utbetalt til aksjonærer i løpet av året
 
 
 # ---------------------------------------------------------------------------

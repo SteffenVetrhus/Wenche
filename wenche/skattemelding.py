@@ -57,6 +57,10 @@ def les_config(config_fil: str) -> tuple[Aarsregnskap, SkattemeldingKonfig]:
     foregaaende_resultat = _les_resultat(fa["resultatregnskap"]) if "resultatregnskap" in fa else Resultatregnskap()
     foregaaende_balanse = _les_balanse(fa["balanse"]) if "balanse" in fa else Balanse()
 
+    utbytte_utbetalt = sum(
+        int(a.get("utbytte_utbetalt", 0)) for a in raw.get("aksjonaerer", [])
+    )
+
     regnskap = Aarsregnskap(
         selskap=selskap,
         regnskapsaar=int(raw["regnskapsaar"]),
@@ -64,6 +68,7 @@ def les_config(config_fil: str) -> tuple[Aarsregnskap, SkattemeldingKonfig]:
         balanse=balanse,
         foregaaende_aar_resultat=foregaaende_resultat,
         foregaaende_aar_balanse=foregaaende_balanse,
+        utbytte_utbetalt=utbytte_utbetalt,
     )
 
     sm_raw = raw.get("skattemelding", {})
@@ -314,6 +319,49 @@ def generer(regnskap: Aarsregnskap, konfig: SkattemeldingKonfig) -> str:
             f"  Legg til 'foregaaende_aar' i config.yaml (påkrevd, jf. rskl. § 6-6).",
             "",
         ]
+
+    # --- Egenkapitalnote (rskl. § 7-2b) ---
+
+    def _ekk(v: int) -> str:
+        return f"{v:>12,}".replace(",", " ")
+
+    def _ek_rad(label: str, ak: int, ok: int, aek: int) -> str:
+        s = ak + ok + aek
+        return f"  {label:<20}{_ekk(ak)}{_ekk(ok)}{_ekk(aek)}{_ekk(s)}"
+
+    aarsresultat = resultat_foer_skatt - beregnet_skatt
+    ek_ub = b.egenkapital_og_gjeld.egenkapital
+
+    linjer += [
+        "",
+        linje,
+        "  NOTE: EGENKAPITAL  (rskl. § 7-2b)",
+        linje,
+        f"  {'':20}{'AK-kapital':>12}{'Overkursfond':>12}{'Annen EK':>12}{'Sum':>12}",
+    ]
+
+    if har_fjoraar:
+        ek_ib = fb.egenkapital_og_gjeld.egenkapital
+        delta_ak = ek_ub.aksjekapital - ek_ib.aksjekapital
+        delta_ok = ek_ub.overkursfond - ek_ib.overkursfond
+        forklart_aek = ek_ib.annen_egenkapital + aarsresultat - regnskap.utbytte_utbetalt
+        andre_aek = ek_ub.annen_egenkapital - forklart_aek
+
+        linjer.append(_ek_rad(f"EK 01.01.{år}", ek_ib.aksjekapital, ek_ib.overkursfond, ek_ib.annen_egenkapital))
+        linjer.append(_ek_rad("Årsresultat", 0, 0, aarsresultat))
+        if regnskap.utbytte_utbetalt != 0:
+            linjer.append(_ek_rad("Utbytte utbetalt", 0, 0, -regnskap.utbytte_utbetalt))
+        if delta_ak != 0 or delta_ok != 0 or andre_aek != 0:
+            linjer.append(_ek_rad("Andre endringer", delta_ak, delta_ok, andre_aek))
+        linjer.append(_ek_rad(f"EK 31.12.{år}", ek_ub.aksjekapital, ek_ub.overkursfond, ek_ub.annen_egenkapital))
+    else:
+        linjer += [
+            f"  NB: Egenkapitalbevegelse krever foregaaende_aar (rskl. § 7-2b).",
+            _ek_rad(f"EK 31.12.{år}", ek_ub.aksjekapital, ek_ub.overkursfond, ek_ub.annen_egenkapital),
+        ]
+
+    linjer.append("  (beløp i hele kroner, NOK)")
+    linjer.append("")
 
     if i_balanse:
         linjer.append("  Balansekontroll: OK")

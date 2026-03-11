@@ -120,6 +120,62 @@ def test_advarsel_naar_sammenligningstall_mangler(eksempel_regnskap):
     assert "§ 6-6" in tekst
 
 
+def test_egenkapitalnote_vises_med_fjoraar(eksempel_regnskap):
+    """Egenkapitalnoten skal vises med bevegelsestabel når foregående år er tilgjengelig."""
+    from wenche.models import Balanse, Egenkapital, EgenkapitalOgGjeld, LangsiktigGjeld
+    eksempel_regnskap.foregaaende_aar_balanse = Balanse(
+        egenkapital_og_gjeld=EgenkapitalOgGjeld(
+            egenkapital=Egenkapital(aksjekapital=30000, annen_egenkapital=-28800),
+            langsiktig_gjeld=LangsiktigGjeld(laan_fra_aksjonaer=100000),
+        ),
+    )
+    konfig = SkattemeldingKonfig()
+    tekst = generer(eksempel_regnskap, konfig)
+    assert "NOTE: EGENKAPITAL" in tekst
+    assert "§ 7-2b" in tekst
+    assert "EK 01.01.2025" in tekst
+    assert "EK 31.12.2025" in tekst
+    assert "Årsresultat" in tekst
+
+
+def test_egenkapitalnote_advarsel_uten_fjoraar(eksempel_regnskap):
+    """Uten foregående år skal noten advare om manglende egenkapitalbevegelse."""
+    konfig = SkattemeldingKonfig()
+    tekst = generer(eksempel_regnskap, konfig)
+    assert "NOTE: EGENKAPITAL" in tekst
+    assert "foregaaende_aar" in tekst
+
+
+def test_egenkapitalnote_utbytte_vises(eksempel_regnskap):
+    """Utbytte utbetalt skal vises som egen linje i egenkapitalnoten."""
+    from wenche.models import Balanse, Egenkapital, EgenkapitalOgGjeld, LangsiktigGjeld
+    eksempel_regnskap.utbytte_utbetalt = 50000
+    eksempel_regnskap.foregaaende_aar_balanse = Balanse(
+        egenkapital_og_gjeld=EgenkapitalOgGjeld(
+            egenkapital=Egenkapital(aksjekapital=30000, annen_egenkapital=20000),
+            langsiktig_gjeld=LangsiktigGjeld(laan_fra_aksjonaer=0),
+        ),
+    )
+    konfig = SkattemeldingKonfig()
+    tekst = generer(eksempel_regnskap, konfig)
+    assert "Utbytte utbetalt" in tekst
+    assert "-50 000" in tekst
+
+
+def test_egenkapitalnote_ingen_utbytte_linje_naar_null(eksempel_regnskap):
+    """Utbytte-linjen skal ikke vises når utbytte er 0."""
+    from wenche.models import Balanse, Egenkapital, EgenkapitalOgGjeld, LangsiktigGjeld
+    eksempel_regnskap.foregaaende_aar_balanse = Balanse(
+        egenkapital_og_gjeld=EgenkapitalOgGjeld(
+            egenkapital=Egenkapital(aksjekapital=30000, annen_egenkapital=-28800),
+            langsiktig_gjeld=LangsiktigGjeld(laan_fra_aksjonaer=100000),
+        ),
+    )
+    konfig = SkattemeldingKonfig()
+    tekst = generer(eksempel_regnskap, konfig)
+    assert "Utbytte utbetalt" not in tekst
+
+
 def test_balansekontroll_advarsel():
     """Ubalansert balanse skal gi advarsel i rapporten."""
     from wenche.models import (
