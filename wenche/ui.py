@@ -789,6 +789,10 @@ with fane_regnskap:
             st.number_input("Skyldige offentlige avgifter", step=1000, key="f_skyldige_offentlige_avgifter")
             st.number_input("Annen kortsiktig gjeld", step=1000, key="f_annen_kortsiktig_gjeld")
 
+    if st.button("Lagre regnskapstall", type="primary"):
+        lagre_config()
+        st.success(f"Lagret til {CONFIG_FIL.resolve()}")
+
 
 # ---------------------------------------------------------------------------
 # Fane 3: Aksjonærer
@@ -822,6 +826,10 @@ with fane_aksjonaerer:
                     "Innbetalt kapital per aksje (NOK)", min_value=0, key=f"a_kap_{i}",
                     help="Aksjekapital delt på antall aksjer. Eks: 30 000 kr / 100 aksjer = 300 kr per aksje.",
                 )
+
+    if st.button("Lagre aksjonærer", type="primary"):
+        lagre_config()
+        st.success(f"Lagret til {CONFIG_FIL.resolve()}")
 
 
 # ---------------------------------------------------------------------------
