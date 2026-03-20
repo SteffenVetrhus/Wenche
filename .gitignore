@@ -18,11 +18,11 @@ venv/
 .idea/
 .claude/
 
-# Genererte filer
+# Genererte filer (kun i rotkatalogen)
 site/
-*.xml
-*.xbrl
-*.html
-*.txt
+/*.xml
+/*.xbrl
+/*.html
+/*.txt
 node_modules/
 .svelte-kit/
