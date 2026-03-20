@@ -128,6 +128,14 @@ class BrregClient:
             )
 
         resp = self._http.get(f"/enheter/{org_nummer}")
+        if resp.status_code == 404:
+            # Prøv underenheter (avdelinger, filialer)
+            resp = self._http.get(f"/underenheter/{org_nummer}")
+        if resp.status_code == 404:
+            raise ValueError(
+                f"Fant ikke organisasjonsnummer {org_nummer} i Enhetsregisteret. "
+                "Sjekk at nummeret er riktig."
+            )
         resp.raise_for_status()
         enhet = _parse_enhet(resp.json())
 
