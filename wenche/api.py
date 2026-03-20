@@ -40,6 +40,7 @@ from wenche.models import (
     Selskap,
     SkattemeldingKonfig,
 )
+from wenche.brreg_client import BrregClient
 from wenche.skd_client import SkdAksjonaerClient
 
 CONFIG_FIL = Path("config.yaml")
@@ -444,6 +445,42 @@ def _bygg_regnskap(data: FullKonfig) -> Aarsregnskap:
 # ---------------------------------------------------------------------------
 # Endepunkter
 # ---------------------------------------------------------------------------
+
+
+@app.get("/api/brreg/{org_nummer}")
+def hent_brreg_enhet(org_nummer: str):
+    """Henter selskapsinfo fra Brønnøysundregistrenes Enhetsregister."""
+    try:
+        with BrregClient() as klient:
+            enhet = klient.hent_enhet(org_nummer)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Kunne ikke hente selskap: {e}")
+
+    stiftelsesaar = 0
+    for dato_felt in (enhet.stiftelsesdato, enhet.registreringsdato):
+        if dato_felt and len(dato_felt) >= 4:
+            try:
+                stiftelsesaar = int(dato_felt[:4])
+                break
+            except ValueError:
+                pass
+
+    return {
+        "navn": enhet.navn,
+        "org_nummer": enhet.organisasjonsnummer,
+        "organisasjonsform": enhet.organisasjonsform,
+        "forretningsadresse": enhet.forretningsadresse,
+        "daglig_leder": enhet.daglig_leder,
+        "styreleder": enhet.styreleder,
+        "stiftelsesaar": stiftelsesaar,
+        "epostadresse": enhet.epostadresse,
+        "hjemmeside": enhet.hjemmeside,
+        "naeringskode": enhet.naeringskode,
+        "konkurs": enhet.konkurs,
+        "under_avvikling": enhet.under_avvikling,
+    }
 
 
 @app.get("/api/config")

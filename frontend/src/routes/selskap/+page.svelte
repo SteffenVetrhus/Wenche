@@ -4,7 +4,36 @@
 	import { get } from 'svelte/store';
 
 	let saving = $state(false);
+	let fetching = $state(false);
 	let message = $state<{ type: string; text: string } | null>(null);
+
+	async function hentFraBrreg() {
+		const orgnr = $config.selskap.org_nummer.replace(/\s/g, '');
+		if (!orgnr || orgnr.length !== 9) {
+			message = { type: 'error', text: 'Skriv inn et gyldig organisasjonsnummer (9 siffer) først.' };
+			return;
+		}
+		fetching = true;
+		message = null;
+		try {
+			const enhet = await api.hentSelskap(orgnr);
+			$config.selskap.navn = enhet.navn;
+			$config.selskap.org_nummer = enhet.org_nummer;
+			if (enhet.forretningsadresse) $config.selskap.forretningsadresse = enhet.forretningsadresse;
+			if (enhet.daglig_leder) $config.selskap.daglig_leder = enhet.daglig_leder;
+			if (enhet.styreleder) $config.selskap.styreleder = enhet.styreleder;
+			if (enhet.stiftelsesaar) $config.selskap.stiftelsesaar = enhet.stiftelsesaar;
+			if (enhet.epostadresse) $config.selskap.kontakt_epost = enhet.epostadresse;
+
+			let tekst = `Hentet opplysninger for ${enhet.navn}.`;
+			if (enhet.konkurs) tekst += ' ADVARSEL: Selskapet er registrert som konkurs!';
+			if (enhet.under_avvikling) tekst += ' ADVARSEL: Selskapet er under avvikling!';
+			message = { type: enhet.konkurs || enhet.under_avvikling ? 'warning' : 'success', text: tekst };
+		} catch (e: any) {
+			message = { type: 'error', text: e.message };
+		}
+		fetching = false;
+	}
 
 	async function lagre() {
 		saving = true;
@@ -33,7 +62,13 @@
 		</div>
 		<div class="form-group">
 			<label for="orgnr">Organisasjonsnummer</label>
-			<input id="orgnr" type="text" bind:value={$config.selskap.org_nummer} placeholder="9 siffer" />
+			<div class="input-with-action">
+				<input id="orgnr" type="text" bind:value={$config.selskap.org_nummer} placeholder="9 siffer" />
+				<button class="btn btn-secondary btn-sm" onclick={hentFraBrreg} disabled={fetching}>
+					{#if fetching}<span class="spinner"></span>{/if}
+					Hent fra Brreg
+				</button>
+			</div>
 		</div>
 		<div class="form-group">
 			<label for="dagligleder">Daglig leder</label>

@@ -23,7 +23,8 @@ export const api = {
 	generateAarsregnskap: (data: FullKonfig) => request<{ hovedskjema: string; underskjema: string }>('/api/generate/aarsregnskap', { method: 'POST', body: JSON.stringify(data) }),
 	generateAksjonaerregister: (data: FullKonfig) => request<{ hovedskjema: string; underskjemaer: { navn: string; xml: string }[] }>('/api/generate/aksjonaerregister', { method: 'POST', body: JSON.stringify(data) }),
 	sendAarsregnskap: (data: FullKonfig, env: string) => request<{ ok: boolean; sign_url: string }>('/api/send/aarsregnskap', { method: 'POST', body: JSON.stringify({ ...data, env }) }),
-	sendAksjonaerregister: (data: FullKonfig, env: string) => request<{ ok: boolean; forsendelse_id: string }>('/api/send/aksjonaerregister', { method: 'POST', body: JSON.stringify({ ...data, env }) })
+	sendAksjonaerregister: (data: FullKonfig, env: string) => request<{ ok: boolean; forsendelse_id: string }>('/api/send/aksjonaerregister', { method: 'POST', body: JSON.stringify({ ...data, env }) }),
+	hentSelskap: (orgNummer: string) => request<BrregEnhetData>(`/api/brreg/${orgNummer}`)
 };
 
 export interface KonfigStatus {
@@ -91,6 +92,21 @@ export interface SkattemeldingData {
 	underskudd: number;
 	fritaksmetoden: boolean;
 	eierandel_datterselskap: number;
+}
+
+export interface BrregEnhetData {
+	navn: string;
+	org_nummer: string;
+	organisasjonsform: string;
+	forretningsadresse: string;
+	daglig_leder: string;
+	styreleder: string;
+	stiftelsesaar: number;
+	epostadresse: string;
+	hjemmeside: string;
+	naeringskode: string;
+	konkurs: boolean;
+	under_avvikling: boolean;
 }
 
 export interface FullKonfig {
