@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl && \
     rm -rf /var/lib/apt/lists/*
 
 # Python dependencies
-COPY pyproject.toml LICENSE ./
+COPY pyproject.toml LICENSE README.md ./
 COPY wenche/ ./wenche/
 RUN pip install --no-cache-dir ".[web]"
 
