@@ -16,6 +16,7 @@ import click
 from wenche import __version__
 from wenche import auth, aarsregnskap, aksjonaerregister, skattemelding, systembruker
 from wenche.altinn_client import AltinnClient
+from wenche.brreg_client import BrregClient
 from wenche.skd_client import SkdAksjonaerClient
 
 
@@ -158,6 +159,48 @@ def opprett_systembruker(org: str | None):
         click.echo(f"Feil ved oppretting av systembruker: {e}", err=True)
         raise SystemExit(1)
 
+
+
+# ---------------------------------------------------------------------------
+# Oppslag i Enhetsregisteret
+# ---------------------------------------------------------------------------
+
+@main.command("hent-selskap")
+@click.argument("org_nummer")
+def hent_selskap(org_nummer: str):
+    """Hent selskapsinformasjon fra Brønnøysundregistrene."""
+    with BrregClient() as klient:
+        try:
+            enhet = klient.hent_enhet(org_nummer)
+        except ValueError as e:
+            click.echo(f"Feil: {e}", err=True)
+            raise SystemExit(1)
+        except Exception as e:
+            click.echo(f"Kunne ikke hente selskap: {e}", err=True)
+            raise SystemExit(1)
+
+    click.echo(f"Navn:                {enhet.navn}")
+    click.echo(f"Org.nr.:             {enhet.organisasjonsnummer}")
+    click.echo(f"Organisasjonsform:   {enhet.organisasjonsform}")
+    click.echo(f"Forretningsadresse:  {enhet.forretningsadresse}")
+    if enhet.daglig_leder:
+        click.echo(f"Daglig leder:        {enhet.daglig_leder}")
+    if enhet.styreleder:
+        click.echo(f"Styreleder:          {enhet.styreleder}")
+    if enhet.stiftelsesdato:
+        click.echo(f"Stiftelsesdato:      {enhet.stiftelsesdato}")
+    elif enhet.registreringsdato:
+        click.echo(f"Registreringsdato:   {enhet.registreringsdato}")
+    if enhet.naeringskode:
+        click.echo(f"Næringskode:         {enhet.naeringskode}")
+    if enhet.epostadresse:
+        click.echo(f"E-post:              {enhet.epostadresse}")
+    if enhet.hjemmeside:
+        click.echo(f"Hjemmeside:          {enhet.hjemmeside}")
+    if enhet.konkurs:
+        click.echo("ADVARSEL: Selskapet er registrert som konkurs!")
+    if enhet.under_avvikling:
+        click.echo("ADVARSEL: Selskapet er under avvikling!")
 
 
 # ---------------------------------------------------------------------------
