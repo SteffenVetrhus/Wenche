@@ -1,0 +1,14 @@
+services:
+  wenche:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - WENCHE_ENV=${WENCHE_ENV:-prod}
+      - MASKINPORTEN_CLIENT_ID=${MASKINPORTEN_CLIENT_ID:-}
+      - MASKINPORTEN_KID=${MASKINPORTEN_KID:-}
+      - ORG_NUMMER=${ORG_NUMMER:-}
+      - MASKINPORTEN_PRIVAT_NOKKEL=/app/data/maskinporten_privat.pem
+    restart: unless-stopped

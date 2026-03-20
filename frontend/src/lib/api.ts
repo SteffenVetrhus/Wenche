@@ -1,7 +1,5 @@
-const BASE = 'http://localhost:8000';
-
 async function request<T>(path: string, opts?: RequestInit): Promise<T> {
-	const res = await fetch(`${BASE}${path}`, {
+	const res = await fetch(path, {
 		headers: { 'Content-Type': 'application/json' },
 		...opts
 	});
