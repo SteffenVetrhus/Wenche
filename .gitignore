@@ -25,3 +25,4 @@ site/
 *.html
 *.txt
 node_modules/
+.svelte-kit/

@@ -31,22 +31,64 @@ def main():
 # ---------------------------------------------------------------------------
 
 @main.command()
-def ui():
-    """Start webgrensesnitt i nettleseren (krever pip install wenche[ui])."""
+@click.option("--legacy", is_flag=True, help="Start det gamle Streamlit-grensesnittet.")
+def ui(legacy: bool):
+    """Start webgrensesnitt i nettleseren."""
     import subprocess
     import sys
     from pathlib import Path
 
-    app = Path(__file__).parent / "ui.py"
-    try:
-        subprocess.run(
-            [sys.executable, "-m", "streamlit", "run", str(app)], check=True
-        )
-    except FileNotFoundError:
+    if legacy:
+        app = Path(__file__).parent / "ui.py"
+        try:
+            subprocess.run(
+                [sys.executable, "-m", "streamlit", "run", str(app)], check=True
+            )
+        except FileNotFoundError:
+            click.echo(
+                "Streamlit er ikke installert. Kjør:\n  pip install wenche[ui]", err=True
+            )
+            raise SystemExit(1)
+        return
+
+    # Start FastAPI backend + SvelteKit dev server
+    frontend_dir = Path(__file__).parent.parent / "frontend"
+    if not frontend_dir.exists():
         click.echo(
-            "Streamlit er ikke installert. Kjør:\n  pip install wenche[ui]", err=True
+            f"Frontend-mappen finnes ikke: {frontend_dir}\n"
+            "Kjør 'cd frontend && npm install' for å sette opp.",
+            err=True,
         )
         raise SystemExit(1)
+
+    import signal
+
+    click.echo("Starter Wenche...")
+    click.echo("  API:      http://localhost:8000")
+    click.echo("  Frontend: http://localhost:5173")
+    click.echo()
+
+    api_proc = subprocess.Popen(
+        [sys.executable, "-m", "uvicorn", "wenche.api:app", "--port", "8000", "--reload"],
+    )
+    frontend_proc = subprocess.Popen(
+        ["npm", "run", "dev", "--", "--open"],
+        cwd=str(frontend_dir),
+    )
+
+    def shutdown(sig, frame):
+        api_proc.terminate()
+        frontend_proc.terminate()
+        raise SystemExit(0)
+
+    signal.signal(signal.SIGINT, shutdown)
+    signal.signal(signal.SIGTERM, shutdown)
+
+    try:
+        api_proc.wait()
+    finally:
+        api_proc.terminate()
+        frontend_proc.terminate()
 
 
 @main.command()
