@@ -127,21 +127,43 @@ class BrregClient:
                 "Må være nøyaktig 9 siffer."
             )
 
+        er_underenhet = False
         resp = self._http.get(f"/enheter/{org_nummer}")
         if resp.status_code == 404:
             # Prøv underenheter (avdelinger, filialer)
             resp = self._http.get(f"/underenheter/{org_nummer}")
+            er_underenhet = True
         if resp.status_code == 404:
             raise ValueError(
                 f"Fant ikke organisasjonsnummer {org_nummer} i Enhetsregisteret. "
                 "Sjekk at nummeret er riktig."
             )
         resp.raise_for_status()
-        enhet = _parse_enhet(resp.json())
+        data = resp.json()
+        enhet = _parse_enhet(data)
 
-        # Hent roller (daglig leder, styreleder) fra eget endepunkt
+        # For underenheter: hent adresse, roller og datoer fra overordnet enhet
+        overordnet_orgnr = data.get("overordnetEnhet") if er_underenhet else None
+        roller_orgnr = org_nummer
+
+        if overordnet_orgnr:
+            try:
+                parent_resp = self._http.get(f"/enheter/{overordnet_orgnr}")
+                parent_resp.raise_for_status()
+                parent_data = parent_resp.json()
+                if not enhet.forretningsadresse:
+                    enhet.forretningsadresse = _formater_adresse(parent_data.get("forretningsadresse", {}))
+                if not enhet.stiftelsesdato:
+                    enhet.stiftelsesdato = parent_data.get("stiftelsesdato", "")
+                if not enhet.registreringsdato:
+                    enhet.registreringsdato = parent_data.get("registreringsdatoEnhetsregisteret", "")
+                roller_orgnr = overordnet_orgnr
+            except httpx.HTTPStatusError:
+                pass
+
+        # Hent roller (daglig leder, styreleder)
         try:
-            roller_resp = self._http.get(f"/enheter/{org_nummer}/roller")
+            roller_resp = self._http.get(f"/enheter/{roller_orgnr}/roller")
             roller_resp.raise_for_status()
             _hent_roller(roller_resp.json(), enhet)
         except httpx.HTTPStatusError:
